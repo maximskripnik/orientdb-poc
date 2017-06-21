@@ -5,12 +5,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object Benchmark extends App {
 
-  if (args.isEmpty) {
-    println("Usage: sbt run <N> where N is the number of vertices you want to load orientDB with in each of the tests")
+  if (args.length < 2) {
+    println("Usage: sbt run <N> <doSingle> " +
+      "where N is the number of vertices you want to load orientDB with in each of the tests " +
+      "and doSingle is boolean flag which indicates weather single connection tests should be performed at all. " +
+      "(They can kill OrientDB on large N values (~20k))")
     System.exit(1)
   }
 
-  val n = args(0).toInt
+  val (n, doSingle) = (args(0).toInt, args(1).toBoolean)
 
   println("Configurations read:\n" +
     s"Complexity count: $n, " +
@@ -29,16 +32,18 @@ object Benchmark extends App {
   db.createVertexClass("asyncLabel")
 
   println("=======================================================")
-  println("Executing tests for single connection")
-  println("=======================================================")
-
-  executeTests(SingleConnection)
-
-  println("=======================================================")
   println("Executing tests for pooled connection")
   println("=======================================================")
 
   executeTests(PooledConnection)
+
+  if (doSingle) {
+    println("=======================================================")
+    println("Executing tests for single connection")
+    println("=======================================================")
+
+    executeTests(SingleConnection)
+  }
 
 
   println(s"Deleting database '$dbName'")
