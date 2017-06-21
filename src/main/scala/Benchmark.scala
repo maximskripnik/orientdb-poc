@@ -2,6 +2,8 @@ import util._
 
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.Await
 
 object Benchmark extends App {
 
@@ -35,22 +37,36 @@ object Benchmark extends App {
   println("Executing tests for pooled connection")
   println("=======================================================")
 
-  executeTests(PooledConnection)
+  val (pooledSyncWrite, pooledSyncRead, pooledAsyncWrite, pooledAsyncRead) =
+    executeTests(PooledConnection)
+
+  var resultString = s"Pooled connection:\n" +
+    s"Sync: Write - $pooledSyncWrite ms, Read - $pooledSyncRead ms\n" +
+    s"Async: Write - $pooledAsyncWrite ms, Read - $pooledAsyncRead ms"
 
   if (doSingle) {
     println("=======================================================")
     println("Executing tests for single connection")
     println("=======================================================")
 
-    executeTests(SingleConnection)
-  }
+    val (singleSyncWrite, singleSyncRead, singleAsyncWrite, singleAsyncRead) =
+      executeTests(SingleConnection)
 
+    resultString += s"\nSingle connection:\n" +
+      s"Sync: Write - $singleSyncWrite ms, Read - $singleSyncRead ms\n" +
+      s"Async: Write - $singleAsyncWrite ms, Read - $singleAsyncRead ms"
+  }
 
   println(s"Deleting database '$dbName'")
   serverAdmin.dropDatabase(dbName, "graph")
 
+  println("=======================================================")
+  println("End results")
+  println(resultString)
+  println("=======================================================")
 
-  def executeTests(connection: Connection) = {
+
+  def executeTests(connection: Connection): (Long, Long, Long, Long) = {
     val tests = new LoadTest(connection, n)
 
     val connectionType = connection match {
@@ -59,30 +75,38 @@ object Benchmark extends App {
     }
 
     val writeSyncTimeTaken = tests.syncWrite()
-    printResult(writeSyncTimeTaken, "sync", connectionType)
+    printResult(writeSyncTimeTaken, "sync", "write", connectionType)
 
     val readSyncTimeTaken = tests.syncRead()
-    printResult(readSyncTimeTaken, "sync", connectionType)
+    printResult(readSyncTimeTaken, "sync", "read", connectionType)
 
     clearDatabase()
 
-    tests.asyncWrite().onComplete {
+    val writeF = tests.asyncWrite()
+    writeF.onComplete {
       case Success(timeTaken) =>
-        printResult(timeTaken, "async", connectionType)
+        printResult(timeTaken, "async", "write", connectionType)
       case Failure(ex) =>
         println("Async writes are failed!")
         println(ex.getMessage)
     }
 
-    tests.asyncRead().onComplete {
+    val readF = tests.asyncRead()
+    readF.onComplete {
       case Success(timeTaken) =>
-        printResult(timeTaken, "async", connectionType)
+        printResult(timeTaken, "async", "read", connectionType)
       case Failure(ex) =>
         println("Async reads are failed!")
         println(ex.getMessage)
     }
 
+    //They are completed at this point
+    val writeAsyncTimeTaken = Await.result(writeF, Duration.Inf)
+    val readAsyncTimeTaken = Await.result(readF, Duration.Inf)
+
     clearDatabase()
+
+    (writeSyncTimeTaken, readSyncTimeTaken, writeAsyncTimeTaken, readAsyncTimeTaken)
   }
 
   def clearDatabase() = {
@@ -90,8 +114,8 @@ object Benchmark extends App {
     db.executeSql("delete vertex V")
   }
 
-  def printResult(ms: Long, mode: String, connectionType: String) = {
-    println(s"Took $ms ms to execute $n operations in $mode mode for $connectionType connection type")
+  def printResult(ms: Long, mode: String, action: String, connectionType: String) = {
+    println(s"Took $ms ms to execute $n $action operations in $mode mode for $connectionType connection type")
   }
 
 }
