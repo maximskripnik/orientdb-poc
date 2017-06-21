@@ -5,10 +5,6 @@ Usage
 ---
 
 ### Environments
-"Usage: sbt run <N> <doSingle> " +
-      "where N is the number of vertices you want to load orientDB with in each of the tests " +
-      "and doSingle is boolean flag which indicates weather single connection tests should be performed at all " +
-      "(They can kill OrientDB when OrientDB on large N values (~20k)"
 Configuration file at `src/main//resources/application.conf` should be self-explanatory and also will show you the defaults.
 
 But just in case:
