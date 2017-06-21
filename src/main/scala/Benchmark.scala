@@ -21,7 +21,9 @@ object Benchmark extends App {
     s"Complexity count: $n, " +
     s"Database url: $dbUrl, " +
     s"Database root name: $dbRoot, " +
-    s"Database root password: $dbPassword"
+    s"Database root password: $dbPassword" +
+    s"Database maximum partition size: $dbMaxPartitionSize, " +
+    s"Database maximum pool: $dbMaxPool, "
   )
 
   if (!serverAdmin.existsDatabase(dbName, "plocal")) {

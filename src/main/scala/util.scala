@@ -7,12 +7,13 @@ package object util {
 
   val conf = ConfigFactory.load()
 
-  val (dbHost, dbPort, dbName, dbRoot, dbPassword, dbMaxPool) = (
+  val (dbHost, dbPort, dbName, dbRoot, dbPassword, dbMaxPartitionSize, dbMaxPool) = (
     conf.getString("db.host"),
     conf.getString("db.port"),
     conf.getString("db.name"),
     conf.getString("db.root"),
     conf.getString("db.password"),
+    conf.getInt("db.max-partition-size"),
     conf.getInt("db.max-pool")
   )
 

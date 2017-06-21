@@ -21,7 +21,7 @@ object SingleConnection extends Connection {
 object PooledConnection extends Connection {
 
   val graphFactory = new OrientGraphFactory(dbUrl, dbRoot, dbPassword)
-  graphFactory.setupPool(1, dbMaxPool)
+  graphFactory.setupPool(dbMaxPartitionSize, dbMaxPool)
 
   override def graphAsJava = graphFactory.getNoTx
 

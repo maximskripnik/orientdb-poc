@@ -5,7 +5,7 @@ Usage
 ---
 
 ### Environments
-Configuration file at `src/main//resources/application.conf` should be self-explanatory and also will show you the defaults.
+Configuration file at `src/main/resources/application.conf` should be self-explanatory and also will show you the defaults.
 
 But just in case:
   
@@ -18,6 +18,8 @@ But just in case:
 `export DB_ROOT_USERNAME=<OrientDB user name>` User should have rights to create/delete databases on server
 
 `export DB_ROOT_PASSWORD=<OrientDB user password>`
+
+`export DB_MAX_PARTITION_SIZE=<Maximum size of partition to be used in pool-connection test>`
 
 `export DB_MAX_POOL_SIZE=<Maximum size of pool to be used in pool-connection tests>`
 
