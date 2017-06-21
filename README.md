@@ -28,4 +28,4 @@ But just in case:
 
 where N is the number of vertices you want to load orientDB with in each of the tests 
 and doSingle is boolean flag which indicates weather single connection tests should be performed at all.
-(They can kill OrientDB when OrientDB on large N values (~20k))
+(They can kill OrientDB on large N values (~20k))
