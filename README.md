@@ -24,7 +24,7 @@ But just in case:
 `export DB_MAX_POOL_SIZE=<Maximum size of pool to be used in pool-connection tests>`
 
 ### Starting the benchmark
-`sbt "run <N>"`
+`sbt "run <N> <doSingle>"`
 
 where N is the number of vertices you want to load orientDB with in each of the tests 
 and doSingle is boolean flag which indicates weather single connection tests should be performed at all.
