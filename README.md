@@ -27,5 +27,5 @@ But just in case:
 `sbt "run <N> <doSingle>"`
 
 where N is the number of vertices you want to load orientDB with in each of the tests 
-and doSingle is boolean flag which indicates weather single connection tests should be performed at all.
+and doSingle is boolean flag which indicates whether single connection tests should be performed at all.
 (They can kill OrientDB on large N values (~20k))

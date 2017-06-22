@@ -10,7 +10,7 @@ object Benchmark extends App {
   if (args.length < 2) {
     println("Usage: sbt run <N> <doSingle> " +
       "where N is the number of vertices you want to load orientDB with in each of the tests " +
-      "and doSingle is boolean flag which indicates weather single connection tests should be performed at all. " +
+      "and doSingle is boolean flag which indicates whether single connection tests should be performed at all. " +
       "(They can kill OrientDB on large N values (~20k))")
     System.exit(1)
   }
@@ -39,24 +39,36 @@ object Benchmark extends App {
   println("Executing tests for pooled connection")
   println("=======================================================")
 
-  val (pooledSyncWrite, pooledSyncRead, pooledAsyncWrite, pooledAsyncRead) =
-    executeTests(PooledConnection)
+  val (
+    pooledSyncWrite,
+    pooledSyncRead,
+    pooledSyncUpdate,
+    pooledAsyncWrite,
+    pooledAsyncRead,
+    pooledAsyncUpdate
+  ) = executeTests(PooledConnection)
 
   var resultString = s"Pooled connection:\n" +
-    s"Sync: Write - $pooledSyncWrite ms, Read - $pooledSyncRead ms\n" +
-    s"Async: Write - $pooledAsyncWrite ms, Read - $pooledAsyncRead ms"
+    s"Sync: Write - $pooledSyncWrite ms, Read - $pooledSyncRead ms, Update - $pooledSyncUpdate ms\n" +
+    s"Async: Write - $pooledAsyncWrite ms, Read - $pooledAsyncRead ms, Update - $pooledAsyncUpdate ms"
 
   if (doSingle) {
     println("=======================================================")
     println("Executing tests for single connection")
     println("=======================================================")
 
-    val (singleSyncWrite, singleSyncRead, singleAsyncWrite, singleAsyncRead) =
-      executeTests(SingleConnection)
+    val (
+      singleSyncWrite,
+      singleSyncRead,
+      singleSyncUpdate,
+      singleAsyncWrite,
+      singleAsyncRead,
+      singleAsyncUpdate
+    ) = executeTests(SingleConnection)
 
     resultString += s"\nSingle connection:\n" +
-      s"Sync: Write - $singleSyncWrite ms, Read - $singleSyncRead ms\n" +
-      s"Async: Write - $singleAsyncWrite ms, Read - $singleAsyncRead ms"
+      s"Sync: Write - $singleSyncWrite ms, Read - $singleSyncRead ms, Update - $singleSyncUpdate ms\n" +
+      s"Async: Write - $singleAsyncWrite ms, Read - $singleAsyncRead ms, Update - $singleAsyncUpdate ms"
   }
 
   println(s"Deleting database '$dbName'")
@@ -68,7 +80,7 @@ object Benchmark extends App {
   println("=======================================================")
 
 
-  def executeTests(connection: Connection): (Long, Long, Long, Long) = {
+  def executeTests(connection: Connection): (Long, Long, Long, Long, Long, Long) = {
     val tests = new LoadTest(connection, n)
 
     val connectionType = connection match {
@@ -81,6 +93,11 @@ object Benchmark extends App {
 
     val readSyncTimeTaken = tests.syncRead()
     printResult(readSyncTimeTaken, "sync", "read", connectionType)
+
+    clearDatabase()
+
+    val updateSyncTimeTaken = tests.syncUpdate()
+    printResult(updateSyncTimeTaken, "sync", "update", connectionType)
 
     clearDatabase()
 
@@ -102,13 +119,32 @@ object Benchmark extends App {
         println(ex.getMessage)
     }
 
-    //They are completed at this point
-    val writeAsyncTimeTaken = Await.result(writeF, Duration.Inf)
-    val readAsyncTimeTaken = Await.result(readF, Duration.Inf)
+    clearDatabase()
+
+    val updateF = tests.asyncRead()
+    updateF.onComplete {
+      case Success(timeTaken) =>
+        printResult(timeTaken, "async", "update", connectionType)
+      case Failure(ex) =>
+        println("Async updates are failed!")
+        println(ex.getMessage)
+    }
 
     clearDatabase()
 
-    (writeSyncTimeTaken, readSyncTimeTaken, writeAsyncTimeTaken, readAsyncTimeTaken)
+    //They are completed at this point
+    val writeAsyncTimeTaken = Await.result(writeF, Duration.Inf)
+    val readAsyncTimeTaken = Await.result(readF, Duration.Inf)
+    val updateAsyncTimeTaken = Await.result(updateF, Duration.Inf)
+
+    (
+      writeSyncTimeTaken,
+      readSyncTimeTaken,
+      updateSyncTimeTaken,
+      writeAsyncTimeTaken,
+      readAsyncTimeTaken,
+      updateAsyncTimeTaken
+    )
   }
 
   def clearDatabase() = {
