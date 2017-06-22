@@ -4,6 +4,7 @@ scalaVersion := "2.12.2"
 
 libraryDependencies ++= Seq(
   "com.michaelpollmeier" %% "gremlin-scala" % "3.2.4.15",
+  "com.github.tototoshi" %% "scala-csv" % "1.3.4",
   "com.michaelpollmeier" % "orientdb-gremlin" % "3.2.3.0",
   "com.typesafe" % "config" % "1.3.1"
 )

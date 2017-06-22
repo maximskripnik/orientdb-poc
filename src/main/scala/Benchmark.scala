@@ -1,3 +1,7 @@
+import java.io.File
+import java.nio.file.{Files, Path}
+
+import com.github.tototoshi.csv.CSVWriter
 import util._
 
 import scala.util.{Failure, Success}
@@ -7,18 +11,20 @@ import scala.concurrent.Await
 
 object Benchmark extends App {
 
-  if (args.length < 2) {
-    println("Usage: sbt run <N> <doSingle> " +
-      "where N is the number of vertices you want to load orientDB with in each of the tests " +
+  if (args.length < 3) {
+    println("Usage: sbt run <N> <fileName> <doSingle>" +
+      "where N is the number of vertices you want to load orientDB with in each of the tests, " +
+      "fileName is the name of file for putting result output in (no overwrite) (in csv format) " +
       "and doSingle is boolean flag which indicates whether single connection tests should be performed at all. " +
       "(They can kill OrientDB on large N values (~20k))")
     System.exit(1)
   }
 
-  val (n, doSingle) = (args(0).toInt, args(1).toBoolean)
+  val (n, fileName, doSingle) = (args(0).toInt, args(1), args(2).toBoolean)
 
   println("Configurations read:\n" +
     s"Complexity count: $n, " +
+    s"Output file: $fileName, " +
     s"Database url: $dbUrl, " +
     s"Database root name: $dbRoot, " +
     s"Database root password: $dbPassword, " +
@@ -48,6 +54,44 @@ object Benchmark extends App {
     pooledAsyncUpdate
   ) = executeTests(PooledConnection)
 
+  val file = new File(fileName)
+
+  if (!file.exists()) {
+    println(s"Creating $fileName")
+
+    val filePath = file.toPath
+    Files.createFile(filePath)
+
+    val header =
+      "Max Partition Size," +
+        "Max Pool Size," +
+        "Connection Type," +
+        "SyncWrite," +
+        "SyncRead," +
+        "SyncUpdate," +
+        "AsyncWrite," +
+        "AsyncRead," +
+        "AsyncUpdate\n"
+
+    Files.write(filePath, header.getBytes)
+  }
+
+  val csv = CSVWriter.open(fileName, append = true)
+
+  val pooledResult = Seq(
+    dbMaxPartitionSize,
+    dbMaxPool,
+    "pooled",
+    pooledSyncWrite,
+    pooledSyncRead,
+    pooledSyncUpdate,
+    pooledAsyncWrite,
+    pooledAsyncRead,
+    pooledAsyncUpdate
+  )
+
+  csv.writeRow(pooledResult)
+
   var resultString = s"Pooled connection:\n" +
     s"Sync: Write - $pooledSyncWrite ms, Read - $pooledSyncRead ms, Update - $pooledSyncUpdate ms\n" +
     s"Async: Write - $pooledAsyncWrite ms, Read - $pooledAsyncRead ms, Update - $pooledAsyncUpdate ms"
@@ -66,6 +110,20 @@ object Benchmark extends App {
       singleAsyncUpdate
     ) = executeTests(SingleConnection)
 
+    val singleResult = Seq(
+      dbMaxPartitionSize,
+      dbMaxPool,
+      "single",
+      singleSyncWrite,
+      singleSyncRead,
+      singleSyncUpdate,
+      singleAsyncWrite,
+      singleAsyncRead,
+      singleAsyncUpdate
+    )
+
+    csv.writeRow(singleResult)
+
     resultString += s"\nSingle connection:\n" +
       s"Sync: Write - $singleSyncWrite ms, Read - $singleSyncRead ms, Update - $singleSyncUpdate ms\n" +
       s"Async: Write - $singleAsyncWrite ms, Read - $singleAsyncRead ms, Update - $singleAsyncUpdate ms"
@@ -73,6 +131,7 @@ object Benchmark extends App {
 
   println(s"Deleting database '$dbName'")
   serverAdmin.dropDatabase(dbName, "graph")
+
 
   println("=======================================================")
   println("End results")
