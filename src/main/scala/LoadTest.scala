@@ -30,15 +30,14 @@ class LoadTest(val connection: Connection, val n: Int) {
   def syncUpdate(): Long = {
     println("Sync update execute...")
 
-    val v1 = graph + "syncLabel"
-    val v2 = graph + "syncLabel"
+    val vertices = (1 to n).map { _ =>
+      graph + "syncLabel"
+    }
     val key = Key[String]("syncProperty")
+
     time {
-      (1 to n).foreach { i =>
-        if (i % 2 == 0)
-          v1.setProperty(key, i.toString)
-        else
-          v2.setProperty(key, i.toString)
+      vertices.zipWithIndex.foreach { case (v, i) =>
+        graph.V(v.id).head.setProperty(key, s"$i value")
       }
     }._2
   }
@@ -82,16 +81,16 @@ class LoadTest(val connection: Connection, val n: Int) {
   }
 
   def asyncUpdate(): Future[Long] = {
-    val v1 = graph + "asyncLabel"
-    val v2 = graph + "asyncLabel"
+    val vertices = (1 to n).map { _ =>
+      graph + "asyncLabel"
+    }
     val key = Key[String]("asyncProperty")
 
     val updateF = Future.sequence {
-      (1 to n).map { i =>
-        if (i % 2 == 0)
-          Future { v1.setProperty(key, i.toString) }
-        else
-          Future { v2.setProperty(key, i.toString) }
+      vertices.zipWithIndex.map { case (v, i) =>
+        Future {
+          graph.V(v.id).head.setProperty(key, s"$i value")
+        }
       }
     }
 

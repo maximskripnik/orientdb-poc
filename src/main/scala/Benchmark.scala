@@ -183,7 +183,7 @@ object Benchmark extends App {
 
     clearDatabase()
 
-    val updateF = tests.asyncRead()
+    val updateF = tests.asyncUpdate()
     updateF.onComplete {
       case Success(timeTaken) =>
         printResult(timeTaken, "async", "update", connectionType)
