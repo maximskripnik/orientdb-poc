@@ -66,6 +66,7 @@ object Benchmark extends App {
       "Max Partition Size," +
         "Max Pool Size," +
         "Connection Type," +
+        "Number of operations," +
         "SyncWrite," +
         "SyncRead," +
         "SyncUpdate," +
@@ -82,6 +83,7 @@ object Benchmark extends App {
     dbMaxPartitionSize,
     dbMaxPool,
     "pooled",
+    n,
     pooledSyncWrite,
     pooledSyncRead,
     pooledSyncUpdate,
@@ -114,6 +116,7 @@ object Benchmark extends App {
       dbMaxPartitionSize,
       dbMaxPool,
       "single",
+      n,
       singleSyncWrite,
       singleSyncRead,
       singleSyncUpdate,
