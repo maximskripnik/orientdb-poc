@@ -1,8 +1,9 @@
 import gremlin.scala._
 import util._
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 class LoadTest(val connection: Connection, val n: Int) {
   import connection.graph
@@ -81,15 +82,22 @@ class LoadTest(val connection: Connection, val n: Int) {
   }
 
   def asyncUpdate(): Future[Long] = {
-    val vertices = (1 to n).map { _ =>
-      graph + "asyncLabel"
-    }
     val key = Key[String]("asyncProperty")
+    val vertices = Await.result(
+      Future.sequence {
+        (1 to n).map { _ =>
+          Future {
+            graph + ("asyncLabel", key -> "initialValue")
+          }
+        }
+      },
+      Duration.Inf
+    )
 
     val updateF = Future.sequence {
       vertices.zipWithIndex.map { case (v, i) =>
         Future {
-          graph.V(v.id).head.setProperty(key, s"$i value")
+          graph.V(v.id).head.setProperty(key, s"Updated $i value")
         }
       }
     }
