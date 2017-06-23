@@ -31,14 +31,15 @@ class LoadTest(val connection: Connection, val n: Int) {
   def syncUpdate(): Long = {
     println("Sync update execute...")
 
-    val vertices = (1 to n).map { _ =>
-      graph + "syncLabel"
-    }
     val key = Key[String]("syncProperty")
+
+    val vertices = (1 to n).map { _ =>
+      graph + ("syncLabel", key -> "initialValue")
+    }
 
     time {
       vertices.zipWithIndex.foreach { case (v, i) =>
-        graph.V(v.id).head.setProperty(key, s"$i value")
+        graph.V(v.id).head.setProperty(key, s"Updated $i value")
       }
     }._2
   }
